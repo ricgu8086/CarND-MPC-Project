@@ -89,6 +89,8 @@ int main()
 
 	// MPC is initialized here!
 	MPC mpc;
+	vector<double> solution, coeffs;
+	Eigen::VectorXd state(6);
 
 	h.onMessage(
 			[&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -111,19 +113,32 @@ int main()
 							// j[1] is the data JSON object
 							vector<double> ptsx = j[1]["ptsx"];
 							vector<double> ptsy = j[1]["ptsy"];
-							double px = j[1]["x"];
-							double py = j[1]["y"];
+							double x = j[1]["x"];
+							double y = j[1]["y"];
 							double psi = j[1]["psi"];
 							double v = j[1]["speed"];
 
 							/*
-							 * TODO: Calculate steering angle and throttle using MPC.
+							 * : Calculate steering angle and throttle using MPC.
 							 *
 							 * Both are in between [-1, 1].
 							 *
 							 */
-							double steer_value;
-							double throttle_value;
+
+							coeffs = polyfit(ptsx, ptsy, 1);
+
+							// : calculate the cross track error
+						  double f = coeffs[0] + coeffs[1] * x;
+						  double cte = f - y ;
+						  // : calculate the orientation error
+						  double psi_des = atan(coeffs[1]);
+						  double epsi = psi - psi_des ;
+
+							state << x, y, psi, v, cte, epsi;
+							solution = mpc.solve(state, coeffs);
+
+							double steer_value = solution[6] / deg2rad(25); // delta
+							double throttle_value = solution[7]; // a
 
 							json msgJson;
 							// NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -137,6 +152,8 @@ int main()
 
 							//.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 							// the points in the simulator are connected by a Green line
+							mpc_x_vals = solution[0]; // x
+							mpc_y_vals = solution[1]; // y
 
 							msgJson["mpc_x"] = mpc_x_vals;
 							msgJson["mpc_y"] = mpc_y_vals;
@@ -147,6 +164,13 @@ int main()
 
 							//.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 							// the points in the simulator are connected by a Yellow line
+
+							for (int i=0; i<=mpc_x_vals.size(); i++) 
+						  {
+						    // TODO: use `polyeval` to evaluate the x values.
+						    next_x_vals.pushback(polyeval(poly_coeffs, i));
+						    next_y_vals.pushback((double)i);
+						  }
 
 							msgJson["next_x"] = next_x_vals;
 							msgJson["next_y"] = next_y_vals;
@@ -162,7 +186,9 @@ int main()
 							//
 							// NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
 							// SUBMITTING.
-							this_thread::sleep_for(chrono::milliseconds(100));
+
+							// TODO
+							//this_thread::sleep_for(chrono::milliseconds(100));
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 						}
 					}
