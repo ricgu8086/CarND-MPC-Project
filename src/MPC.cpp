@@ -6,11 +6,12 @@
 using CppAD::AD;
 using namespace std;
 
-constexpr double pi()
+static constexpr double pi()
 {
 	return M_PI;
 }
-double deg2rad(double x)
+
+static double deg2rad(double x)
 {
 	return x * pi() / 180;
 }
@@ -77,7 +78,7 @@ class FG_eval
       // any anything you think may be beneficial.
 
 
-      for(int i=0; i < N; i++)
+      for(unsigned int i=0; i < N; i++)
       {
         fg[0] += CppAD::pow(vars[cte_start + i], 2); // cte
         fg[0] += CppAD::pow(vars[epsi_start + i], 2); // epsi
@@ -89,7 +90,7 @@ class FG_eval
       }
 
       // To enforce smooth transition
-      for(int i=0; i < N-2; i++)
+      for(unsigned int i=0; i < N-2; i++)
       {
         fg[0] += 500*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
         fg[0] += 200*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);  // a
@@ -113,7 +114,7 @@ class FG_eval
       fg[1 + epsi_start] = vars[epsi_start];
 
       // The rest of the constraints
-      for (int t = 1; t < N; t++) 
+      for (unsigned int t = 1; t < N; t++) 
       {
         AD<double> x0 = vars[x_start + t - 1];
         AD<double> y0 = vars[y_start + t - 1];
@@ -167,7 +168,6 @@ MPC::~MPC()
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 {
 	bool ok = true;
-	size_t i;
 	typedef CPPAD_TESTVECTOR(double) Dvector;
 
 	double x = state[0];
@@ -175,7 +175,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
   double psi = state[2];
   double v = state[3];
   double cte = state[4];
-  double epsi = state[5]
+  double epsi = state[5];
 
 
 	// : Set the number of model variables (includes both states and inputs).
@@ -183,15 +183,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 	// element vector and there are 10 timesteps. The number of variables is:
 	//
 	// 4 * 10 + 2 * 9
-	size_t n_vars = N * 6 + (N - 1) * 2;;
-	// TODO: Set the number of constraints
+	size_t n_vars = N * 6 + (N - 1) * 2;
+	// : Set the number of constraints
 	size_t n_constraints = N*6;
 
 	// Initial value of the independent variables.
 	// SHOULD BE 0 besides initial state.
 	Dvector vars(n_vars);
 
-	for (int i = 0; i < n_vars; i++)
+	for (unsigned int i = 0; i < n_vars; i++)
 	{
 		vars[i] = 0;
 	}
@@ -210,7 +210,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 
 	// Set all non-actuators upper and lowerlimits
   // to the max negative and positive values.
-  for (int i = 0; i < delta_start; i++) 
+  for (unsigned int i = 0; i < delta_start; i++) 
   {
     vars_lowerbound[i] = numeric_limits<double>::min();
     vars_upperbound[i] = numeric_limits<double>::max();
@@ -219,14 +219,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
     // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
   // NOTE: Feel free to change this to something else.
-  for (int i = delta_start; i < a_start; i++) 
+  for (unsigned int i = delta_start; i < a_start; i++) 
   {
     vars_lowerbound[i] = deg2rad(-25);
     vars_upperbound[i] = deg2rad(+25);
   }
 
   // Acceleration/decceleration upper and lower limits.
-  for (int i = a_start; i < n_vars; i++) 
+  for (unsigned int i = a_start; i < n_vars; i++) 
   {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
@@ -237,7 +237,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 	Dvector constraints_lowerbound(n_constraints);
 	Dvector constraints_upperbound(n_constraints);
 
-	for (int i = 0; i < n_constraints; i++)
+	for (unsigned int i = 0; i < n_constraints; i++)
 	{
 		constraints_lowerbound[i] = 0;
 		constraints_upperbound[i] = 0;

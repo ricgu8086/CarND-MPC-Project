@@ -89,8 +89,6 @@ int main()
 
 	// MPC is initialized here!
 	MPC mpc;
-	vector<double> solution, coeffs;
-	Eigen::VectorXd state(6);
 
 	h.onMessage(
 			[&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -124,18 +122,26 @@ int main()
 							 * Both are in between [-1, 1].
 							 *
 							 */
+							Eigen::VectorXd eig_ptsx(ptsx.size()), eig_ptsy(ptsx.size());
 
-							coeffs = polyfit(ptsx, ptsy, 1);
+							for(unsigned int i=0; i<ptsx.size(); i++)
+							{
+								eig_ptsx[i] = ptsx[i];
+								eig_ptsy[i] = ptsy[i];
+							}
+
+							Eigen::VectorXd coeffs = polyfit(eig_ptsx, eig_ptsy, 1);
 
 							// : calculate the cross track error
-						  double f = coeffs[0] + coeffs[1] * x;
-						  double cte = f - y ;
-						  // : calculate the orientation error
-						  double psi_des = atan(coeffs[1]);
-						  double epsi = psi - psi_des ;
+							double f = coeffs[0] + coeffs[1] * x;
+							double cte = f - y ;
+							// : calculate the orientation error
+							double psi_des = atan(coeffs[1]);
+							double epsi = psi - psi_des ;
 
+							Eigen::VectorXd state(6);
 							state << x, y, psi, v, cte, epsi;
-							solution = mpc.solve(state, coeffs);
+							vector<double> solution = mpc.Solve(state, coeffs);
 
 							double steer_value = solution[6] / deg2rad(25); // delta
 							double throttle_value = solution[7]; // a
@@ -152,8 +158,26 @@ int main()
 
 							//.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 							// the points in the simulator are connected by a Green line
-							mpc_x_vals = solution[0]; // x
-							mpc_y_vals = solution[1]; // y
+
+							unsigned int steps_future = 20;
+
+
+							mpc_x_vals.push_back(solution[0]); // x
+							mpc_y_vals.push_back(solution[1]); // y
+
+							state << solution[0], solution[1], solution[2], solution[3] \
+								, solution[4], solution[5];
+
+							for(unsigned int i=1; i<steps_future; i++)
+							{
+								solution = mpc.Solve(state, coeffs);
+
+								mpc_x_vals.push_back(solution[0]); // x
+								mpc_y_vals.push_back(solution[1]); // y
+
+								state << solution[0], solution[1], solution[2], solution[3] \
+									, solution[4], solution[5];
+							}
 
 							msgJson["mpc_x"] = mpc_x_vals;
 							msgJson["mpc_y"] = mpc_y_vals;
@@ -165,12 +189,12 @@ int main()
 							//.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
 							// the points in the simulator are connected by a Yellow line
 
-							for (int i=0; i<=mpc_x_vals.size(); i++) 
-						  {
-						    // TODO: use `polyeval` to evaluate the x values.
-						    next_x_vals.pushback(polyeval(poly_coeffs, i));
-						    next_y_vals.pushback((double)i);
-						  }
+							for (unsigned int i=0; i<steps_future; i++) 
+						  	{
+							    // TODO: use `polyeval` to evaluate the x values.
+							    next_x_vals.push_back(polyeval(coeffs, i));
+							    next_y_vals.push_back((double)i);
+						  	}
 
 							msgJson["next_x"] = next_x_vals;
 							msgJson["next_y"] = next_y_vals;
