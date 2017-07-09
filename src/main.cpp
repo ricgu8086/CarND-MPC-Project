@@ -161,8 +161,7 @@ int main()
 							state << 0, 0, 0, v, cte, epsi;
 							vector<double> solution = mpc.Solve(state, coeffs);
 
-							const double Lf = 2.67;
-							double steer_value = solution[0] / (deg2rad(25)*Lf); // delta. 
+							double steer_value = solution[0] / deg2rad(25); // delta. 
 							double throttle_value = solution[1]; // a
 
 							json msgJson;
