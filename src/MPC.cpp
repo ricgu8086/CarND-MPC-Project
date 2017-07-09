@@ -16,9 +16,21 @@ static double deg2rad(double x)
 	return x * pi() / 180;
 }
 
+// Evaluate a polynomial.
+static double polyeval(Eigen::VectorXd coeffs, double x)
+{
+  double result = 0.0;
+  for (int i = 0; i < coeffs.size(); i++)
+  {
+    result += coeffs[i] * pow(x, i);
+  }
+  return result;
+}
+
+
 // : Set the timestep length and duration
-size_t N = 30;
-double dt = 0.05;
+size_t N = 15;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -76,20 +88,25 @@ class FG_eval
       // Reference State Cost
       // : Define the cost related the reference state and
       // any anything you think may be beneficial.
+      double reference_v = 20;
 
-
+      // Objective 1: Keep close to reference values
       for(unsigned int i=0; i < N; i++)
       {
         fg[0] += CppAD::pow(vars[cte_start + i], 2); // cte
         fg[0] += CppAD::pow(vars[epsi_start + i], 2); // epsi
+        fg[0] += CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
+        // the vehicle stops moving when it's perfectly aligned with the center.
+      }
 
-        fg[0] += CppAD::pow(vars[v_start + i] - 20, 2); // 20 is a reference velocity. This is to avoid
-        // the vehicle stop moving when it's perfectly aligned with the center.
-
+      // Objective 2: Avoid to use the actuators when it's not needed
+      for(unsigned int i=0; i < N-1; i++)
+      {
+        fg[0] += CppAD::pow(vars[a_start + i], 2);
         fg[0] += CppAD::pow(vars[delta_start + i], 2); // delta. We want the car to drive straight ahead as much as possible
       }
 
-      // To enforce smooth transition
+      // Objective 3: To enforce smooth transition
       for(unsigned int i=0; i < N-2; i++)
       {
         fg[0] += 500*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
@@ -133,8 +150,8 @@ class FG_eval
         AD<double> delta0 = vars[delta_start + t - 1];
         AD<double> a0 = vars[a_start + t - 1];
 
-        AD<double> f0 = coeffs[0] + coeffs[1] * x0;
-        AD<double> psi_des = CppAD::atan(coeffs[1]);
+        AD<double> f0 = poly_eval(coeffs, x0);
+        AD<double> psi_des = CppAD::atan(coeffs[1] + 2*coeffs[2]*x0 + 3*coeffs[3]*x0*x0);
 
         // Here's `x` to get you started.
         // The idea here is to constraint this value to be 0.
@@ -298,8 +315,18 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 	//
 	// {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
 	// creates a 2 element double vector.
-  return {solution.x[x_start + 1],   solution.x[y_start + 1],
-        solution.x[psi_start + 1], solution.x[v_start + 1],
-        solution.x[cte_start + 1], solution.x[epsi_start + 1],
-        solution.x[delta_start],   solution.x[a_start]};
+
+  vector<double> result;
+
+  result.push_back(solution.x[delta_start]);
+  result.push_back(solution.x[a_start]);
+
+  // Future positions acCording to MPC
+  for (unsigned int i=0; i<N; i++)
+  {
+    result.push_back(solution.x[x_start + i]);
+    result.push_back(solution.x[y_start + i]);
+  }
+
+  return result;
 }
