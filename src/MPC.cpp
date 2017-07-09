@@ -321,7 +321,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
   result.push_back(solution.x[delta_start]);
   result.push_back(solution.x[a_start]);
 
-  // Future positions acCording to MPC
+  // Future positions according to MPC
   for (unsigned int i=0; i<N; i++)
   {
     result.push_back(solution.x[x_start + i]);
