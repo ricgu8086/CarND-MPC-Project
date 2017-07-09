@@ -82,8 +82,8 @@ class FG_eval
       // Objective 1: Keep close to reference values
       for(unsigned int i=0; i < N; i++)
       {
-        fg[0] += CppAD::pow(vars[cte_start + i], 2); // cte
-        fg[0] += CppAD::pow(vars[epsi_start + i], 2); // epsi
+        fg[0] += 2000*CppAD::pow(vars[cte_start + i], 2); // cte
+        fg[0] += 2000*CppAD::pow(vars[epsi_start + i], 2); // epsi
         fg[0] += CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
         // the vehicle stops moving when it's perfectly aligned with the center.
       }
@@ -91,15 +91,15 @@ class FG_eval
       // Objective 2: Avoid to use the actuators when it's not needed
       for(unsigned int i=0; i < N-1; i++)
       {
-        fg[0] += CppAD::pow(vars[a_start + i], 2);
-        fg[0] += CppAD::pow(vars[delta_start + i], 2); // delta. We want the car to drive straight ahead as much as possible
+        fg[0] += 5*CppAD::pow(vars[a_start + i], 2);
+        fg[0] += 5*CppAD::pow(vars[delta_start + i], 2); // delta. We want the car to drive straight ahead as much as possible
       }
 
       // Objective 3: To enforce smooth transition
       for(unsigned int i=0; i < N-2; i++)
       {
-        fg[0] += 500*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
-        fg[0] += 200*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);  // a
+        fg[0] += 200*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
+        fg[0] += 10*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);  // a
       }
 
       //
@@ -152,7 +152,7 @@ class FG_eval
         // : Setup the rest of the model constraints
         fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
         fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-        fg[1 + psi_start + t] = psi1 - (psi0 + v0/Lf * delta0 * dt);
+        fg[1 + psi_start + t] = psi1 - (psi0 - v0/Lf * delta0 * dt);
         fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
         fg[1 + cte_start + t] = cte1 - (f0 - y0 + v0 * CppAD::sin(epsi0) * dt);
         fg[1 + epsi_start + t] = epsi1 - (psi0 - psi_des + v0/Lf * delta0 * dt);
