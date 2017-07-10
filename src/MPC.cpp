@@ -84,22 +84,22 @@ class FG_eval
       {
         fg[0] += 2000*CppAD::pow(vars[cte_start + i], 2); // cte
         fg[0] += 2000*CppAD::pow(vars[epsi_start + i], 2); // epsi
-        fg[0] += CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
+        fg[0] += 100*CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
         // the vehicle stops moving when it's perfectly aligned with the center.
       }
 
       // Objective 2: Avoid to use the actuators when it's not needed
       for(unsigned int i=0; i < N-1; i++)
       {
-        fg[0] += 5*CppAD::pow(vars[a_start + i], 2);
-        fg[0] += 5*CppAD::pow(vars[delta_start + i], 2); // delta. We want the car to drive straight ahead as much as possible
+        fg[0] += 10*CppAD::pow(vars[a_start + i], 2);
+        fg[0] += 10*CppAD::pow(vars[delta_start + i], 2); // delta. We want the car to drive straight ahead as much as possible
       }
 
       // Objective 3: To enforce smooth transition
       for(unsigned int i=0; i < N-2; i++)
       {
-        fg[0] += 200*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
-        fg[0] += 10*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);  // a
+        fg[0] += 100000*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2); // delta
+        fg[0] += 10000*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);  // a
       }
 
       //
