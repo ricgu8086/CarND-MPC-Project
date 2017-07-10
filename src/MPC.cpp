@@ -218,7 +218,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
   // to the max negative and positive values.
   for (unsigned int i = 0; i < delta_start; i++) 
   {
-    vars_lowerbound[i] = numeric_limits<double>::min();
+    vars_lowerbound[i] = -numeric_limits<double>::max();
     vars_upperbound[i] = numeric_limits<double>::max();
   }
 
