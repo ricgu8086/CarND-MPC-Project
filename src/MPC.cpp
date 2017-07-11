@@ -35,7 +35,7 @@ const double Lf = 2.67;
 
 // NOTE: feel free to play around with this
 // or do something completely different
-double ref_v = 40;
+double ref_v = 70;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -84,7 +84,7 @@ class FG_eval
       {
         fg[0] += 2000*CppAD::pow(vars[cte_start + i], 2); // cte
         fg[0] += 2000*CppAD::pow(vars[epsi_start + i], 2); // epsi
-        fg[0] += 100*CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
+        fg[0] += 500*CppAD::pow(vars[v_start + i] - reference_v, 2); // This is to avoid
         // the vehicle stops moving when it's perfectly aligned with the center.
       }
 
