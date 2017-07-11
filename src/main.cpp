@@ -116,6 +116,8 @@ int main()
 							double y = j[1]["y"];
 							double psi = j[1]["psi"];
 							double v = j[1]["speed"];
+							double delta = j[1]["steering_angle"];
+							double a = j[1]["throttle"];
 
 							/*
 							 * : Calculate steering angle and throttle using MPC.
@@ -157,8 +159,19 @@ int main()
 							// : calculate the orientation error
 							double epsi = -atan(coeffs[1]);
 
+							// Estimate ahead of time so we can deal with latency
+							double dt = 0.1; // Same time as simulated delay
+							const double Lf = 2.67;
+
+							double x_est = 0 + v * dt;
+							double y_est = 0; 
+							double psi_est = 0 - v/Lf * delta * dt;
+							double v_est = v + a *dt;
+							double cte_est = cte + v * sin(epsi) * dt;
+							double epsi_est = epsi -v/Lf * delta * dt;
+
 							Eigen::VectorXd state(6);
-							state << 0, 0, 0, v, cte, epsi;
+							state << x_est, y_est, psi_est, v_est, cte_est, epsi_est;
 							vector<double> solution = mpc.Solve(state, coeffs);
 
 							double steer_value = solution[0] / deg2rad(25); // delta. 
@@ -222,8 +235,7 @@ int main()
 							// NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
 							// SUBMITTING.
 
-							// TODO
-							//this_thread::sleep_for(chrono::milliseconds(100));
+							this_thread::sleep_for(chrono::milliseconds(100));
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 						}
 					}
